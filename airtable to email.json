@@ -1,0 +1,164 @@
+{
+  "name": "airtable to email",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "airtableTokenApi",
+        "baseId": {
+          "__rl": true,
+          "value": "https://airtable.com/appkFQZbe8GNEoqEN/tblc0NE70nXFSpOig/viwrFEIwcKHVkkaCi?blocks=hide",
+          "mode": "url"
+        },
+        "tableId": {
+          "__rl": true,
+          "value": "https://airtable.com/appkFQZbe8GNEoqEN/tblc0NE70nXFSpOig/viwrFEIwcKHVkkaCi?blocks=hide",
+          "mode": "url"
+        },
+        "triggerField": "Order Number",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -96
+      ],
+      "id": "eebc58a3-871e-4ae9-81ea-abd2a4620263",
+      "name": "Airtable Trigger",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "dmBhCCHP7dOZT43i",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are responsible for customer orders. Your task is to collect incoming information about new orders and create a clear summary that will be sent via email to the team. The email should be signed with \"Customer Success Team\".\nHere are the details of the customer orders:\n\nOrder Number:{{ $json.fields['Order Number'] }}\n\nCustomer:{{ $json.fields.Customer }}\n\nProduct:{{ $json.fields.Product }}\n\nQuantity:{{ $json.fields.Quantity }}\n\nPrice:{{ $json.fields.Price }}\n\nDate:{{ $json.fields.Date }}\n\nStatus:{{ $json.fields.Status }}\n\nPlease provide the following output parameters:\nemail_subject\nemail_content\n\n\"Respond ONLY with a raw JSON object. Do not include markdown code blocks (```json), do not include leading or trailing spaces, and do not include any text before or after the JSON.  Generate the email_content using HTML tags for better formatting.\n\nUse <br> for new lines.\n\nUse <strong> for labels like Order Number:.\n\nUse <ul> and <li> for the list of order details.\n\nAdd a formal greeting at the start and 'Best regards,\n\n\nCustomer Success Team' at the end."
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        -64
+      ],
+      "id": "2873d68a-fa79-4044-b778-d3e53c85a5ed",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "95VlnOEgHUPNxJ6t",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "Fadmalik4449@gmail.com",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_content }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        -64
+      ],
+      "id": "aefcea47-651e-46c1-86ad-1e28208067a9",
+      "name": "Send a message",
+      "webhookId": "477b5144-c536-4280-8412-ff842bf4878a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TcwZOcrDYeaxSDmo",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get the messy text from Gemini\nlet rawText = $node[\"Message a model\"].json.content.parts[0].text;\n\n// 2. Clean it: find the first '{' and last '}' to ignore extra text/newlines\nlet start = rawText.indexOf('{');\nlet end = rawText.lastIndexOf('}') + 1;\nlet cleanJsonText = rawText.substring(start, end);\n\n// 3. Turn that text into real data\nlet data = JSON.parse(cleanJsonText);\n\n// 4. Send the clean fields to the Gmail node\nreturn {\n  email_subject: data.email_subject,\n  email_content: data.email_content\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -64
+      ],
+      "id": "328a520b-4dcb-49ea-9274-443321226b2d",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Airtable Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "514cfe95-54f6-4631-9a65-b0555a9e371b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1dc9d47213a8401d66a9b05c3f4ac5d788be345eaa3fd98bd480d0994a87e59b"
+  },
+  "id": "KkkqrRFuFgPHVoQ1",
+  "tags": []
+}
