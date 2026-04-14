@@ -1,4 +1,4 @@
-# 📦 Airtable AI Order Email Notifier
+#  Airtable AI Order Email Notifier
 
 An automated order notification pipeline that monitors Airtable for new orders, uses Google Gemini AI to generate professional email summaries, and instantly delivers them to your team via Gmail.
 
